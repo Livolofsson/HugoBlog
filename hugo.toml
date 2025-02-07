@@ -1,0 +1,6 @@
+baseURL = "https://Livolofsson.github.io/"
+title = "My Project Showcase"
+theme = "newsroom"
+
+[params]
+  description = "A collection of my projects and blog posts"
