@@ -5,4 +5,4 @@ draft: false
 ---
 This is my first project! Here’s a brief description of what I built. Testing.
 
-![Alt text](/shoppinghour.png)
+![Alt text](/../shoppinghour.png)
