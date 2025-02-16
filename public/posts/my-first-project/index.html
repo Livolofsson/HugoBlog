@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" >
   <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
-  <title>My first project | My Project Showcase</title>
+  <title>Reverse engineering kivra&#39;s API | My Project Showcase</title>
   <meta charset='utf-8'>
   <meta name="viewport" content ="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -10,9 +10,9 @@
 <meta name="keywords" content="My Project Showcase">
 <meta property="og:locale" content='en_US'>
 <meta property="og:type" content="article">
-<meta property="og:title" content="My First Project">
-<meta property="og:description" content="This is my first project! Here’s a brief description of what I built. Testing.
-">
+<meta property="og:title" content="Reverse Engineering Kivra&#39;s API">
+<meta property="og:description" content="
+Kivra is a digital service that many companies use to send documents to Swedish citizens, such as bills, tax notices and an occasional reminder such as “Hey,">
 <meta property="og:url" content="http://localhost:1313/posts/my-first-project/">
 <meta property="og:image" content="images/%!s(&lt;nil&gt;)">
 <link rel="canonical" href="http://localhost:1313/posts/my-first-project/">
@@ -49,13 +49,271 @@
       
   <div class="wrap mt post">
     <div><p class=post_date>07. February 2025</p>
-      <h1 class="post_title">My First Project</h1>
+      <h1 class="post_title">Reverse Engineering Kivra&#39;s API</h1>
       <div class="post_body">
         <div class="post_inner">
         
         
-          <p>This is my first project! Here’s a brief description of what I built. Testing.</p>
-<p><img src="shoppinghour.png" alt="Alt text" title="a title"></p>
+          <p><img src="kivratest2.png" alt="Alt text" title="a title"></p>
+<p>Kivra is a digital service that many companies use to send documents to Swedish citizens, such as bills, tax notices and an occasional reminder such as “Hey, it’s time for a doctor visit!”  letting you know you’re not invincible anymore.</p>
+<p>It also collects all receipts of purchases you’ve made, if you want them to! The coolest part? You automatically stop receiving paper documents in your mailbox  or receipts in-store, because you’ve signed up to get them digitally instead! It’s the perfect gift for adulthood. 😉</p>
+<hr>
+<h2 id="if-youre-like-me-youve-probably-wondered">If you’re like me, you’ve probably wondered:</h2>
+<ul>
+<li><strong>Can I uncover patterns/trends in my purchase history to make better financial decisions?</strong></li>
+<li><strong>Am I a responsible adult or just really good at pretending? 🤔</strong></li>
+<li><strong>Can I track my receipts like some kind of financial detective?</strong></li>
+</ul>
+<p>The answer is <strong>YES!</strong>  But here’s the twist—Kivra doesn’t exactly hand over this data in a neat little export button. So, like any curious soul (or mildly obsessive person), I reverse-engineered my way into grabbing my own receipts programmatically.</p>
+<hr>
+<h2 id="step-1-break-intowait-no-just-log-into-kivra">Step 1️: Break into—Wait, No, Just Log Into Kivra</h2>
+<p>Before we start our (totally legal and ethical) data heist, you’ll need to log into Kivra using BankID. A digital idenfication system widely used in Sweden.</p>
+<p>This post, however, is all about how to actually get access to your receipts as a private person from Kivra. If documentation existed about how to acquire that as a private person, then this post wouldn&rsquo;t have existed. 😅 We&rsquo;ll have to reverse engineer their API.</p>
+<p>Once logged in with your BankID, it’s pretty straightforward though. Don’t worry, this is not hacking—this is just playing Sherlock Holmes. 😎 Reverse engineering is like hacking but having the law on your side.</p>
+<hr>
+<h2 id="step-2-spy-on-the-network">Step 2️: Spy on the Network</h2>
+<p>Okay, time to do what every nerd loves: looking underneath the hood.</p>
+<ol>
+<li>Right-click to open “Inspect”.</li>
+<li>Click on the <strong>Network tab</strong>.</li>
+<li>Refresh the page and watch Kivra’s API spill all its secrets right in front of you.</li>
+</ol>
+<p>You’ll see a flood of network requests, but we’re looking for one specific operation—something like receipt.</p>
+<p><img src="behindhood.png" alt="Alt text" title="a title"></p>
+<hr>
+<h2 id="step-3-decode-the-api-calls-with-postman">Step 3️: Decode the API Calls with Postman</h2>
+<p><em>(Optional, but super helpful!)</em></p>
+<p>If you’re already comfortable with reverse-engineering APIs, you might skip this. Otherwise, <strong>Postman</strong> helps figure out the puzzle pieces of our detective work.</p>
+<ol>
+<li>Paste the request into Postman and click <strong>Send</strong>.</li>
+<li>You’ll get error messages telling you what’s missing.</li>
+<li>Error messages are our best friends—they guide us to missing parameters.</li>
+<li>Just go back to <strong>Network Inspect Mode</strong>, grab the missing pieces, and try again.</li>
+</ol>
+<p><img src="errorpostman.png" alt="Alt text"></p>
+<p>Two API requests are needed:</p>
+<ul>
+<li>One with the <strong>operation name <code>receipt</code></strong>, found in the overview page in Kivra. When you&rsquo;ve reconstructed the request successfully in postman you&rsquo;ll get a json body looking like this:</li>
+</ul>
+<pre tabindex="0"><code>{
+    &#34;data&#34;: {
+        &#34;receiptsV2&#34;: {
+            &#34;__typename&#34;: &#34;ReceiptListV2&#34;,
+            &#34;total&#34;: 243,
+            &#34;offset&#34;: 0,
+            &#34;limit&#34;: 1,
+            &#34;list&#34;: [
+                {
+                    &#34;__typename&#34;: &#34;ReceiptBaseDetails&#34;,
+                    &#34;key&#34;: &#34;502dfbf36f4ffdcba10cb78851c1dcf9f1366d98063&#34;,
+                    &#34;purchaseDate&#34;: &#34;2025-02-13T16:44:39Z&#34;,
+                    &#34;totalAmount&#34;: {
+                        &#34;formatted&#34;: &#34;75,25 kr&#34;
+                    },
+                    &#34;store&#34;: {
+                        &#34;name&#34;: &#34;ICA&#34;,
+                        &#34;logo&#34;: {
+                            &#34;publicUrl&#34;: &#34;https://static.kivra.com/receipt/158410061928d4a9a251d546dba34a6361e37e7537&#34;
+                        }
+                    },
+                    &#34;accessInfo&#34;: {
+                        &#34;owner&#34;: {
+                            &#34;isMe&#34;: true,
+                            &#34;name&#34;: &#34;Sam Altman&#34;
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
+</code></pre><ul>
+<li>Another with <strong>receipt details</strong>, found by checking the API requests while opening a specific receipt. A successfull request in Postman will have a respone comes in json format. A subset of the body looks like this:</li>
+</ul>
+<pre tabindex="0"><code>{
+    &#34;data&#34;: {
+        &#34;receiptV2&#34;: {
+            &#34;key&#34;: &#34;2502dfbf36f4ffdcba10cb78851c1dcf9f1366d98063&#34;,
+            &#34;content&#34;: {
+                &#34;header&#34;: {
+                    &#34;totalPurchaseAmount&#34;: &#34;75,25 kr&#34;,
+                    &#34;subAmounts&#34;: [
+                        &#34;Poänggrundande belopp 75,25 kr&#34;
+                    ],
+                    &#34;isoDate&#34;: &#34;2025-02-13T16:44:39Z&#34;,
+                    &#34;formattedDate&#34;: &#34;2025-02-13, 17:44&#34;,
+                    &#34;labels&#34;: [],
+                    &#34;logo&#34;: {
+                        &#34;publicUrl&#34;: &#34;https://static.kivra.com/receipt/1579618096bac60a57676c4f78be1c6af5025d513a&#34;
+                    }
+                },
+                &#34;items&#34;: {
+                    &#34;allItems&#34;: {
+                        &#34;text&#34;: &#34;Produkter&#34;,
+                        &#34;items&#34;: [
+                            {
+                                &#34;text&#34;: [],
+                                &#34;type&#34;: &#34;product&#34;,
+                                &#34;name&#34;: &#34;Apelsin&#34;,
+                                &#34;money&#34;: {
+                                    &#34;formatted&#34;: &#34;22,00 kr&#34;
+                                },
+                                &#34;quantityCost&#34;: null,
+                                &#34;deposits&#34;: [],
+                                &#34;costModifiers&#34;: [],
+                                &#34;identifiers&#34;: []
+                            },
+                            {
+                                &#34;text&#34;: [],
+                                &#34;type&#34;: &#34;product&#34;,
+                                &#34;name&#34;: &#34;Exotic Zero&#34;,
+                                &#34;money&#34;: {
+                                    &#34;formatted&#34;: &#34;24,95 kr&#34;
+                                },
+                                &#34;quantityCost&#34;: null,
+                                &#34;deposits&#34;: [
+                                    {
+                                        &#34;description&#34;: &#34;Pant&#34;,
+                                        &#34;money&#34;: {
+                                            &#34;formatted&#34;: &#34;2,00 kr&#34;
+                                        },
+                                        &#34;isRefund&#34;: false
+                                    }
+                                ],
+                                &#34;costModifiers&#34;: [],
+                                &#34;identifiers&#34;: []
+                            },
+                            {
+                                &#34;text&#34;: [],
+                                &#34;type&#34;: &#34;product&#34;,
+                                &#34;name&#34;: &#34;Lösviktsgodis&#34;,
+                                &#34;money&#34;: {
+                                    &#34;formatted&#34;: &#34;22,35 kr&#34;
+                                },
+                                &#34;quantityCost&#34;: {
+                                    &#34;formatted&#34;: &#34;0,205 kg * 109,00 kr/kg&#34;
+                                },
+                                &#34;deposits&#34;: [],
+                                &#34;costModifiers&#34;: [],
+                                &#34;identifiers&#34;: []
+                            },
+                            {
+                                &#34;text&#34;: [],
+                                &#34;type&#34;: &#34;product&#34;,
+                                &#34;name&#34;: &#34;Plastkasse&#34;,
+                                &#34;money&#34;: {
+                                    &#34;formatted&#34;: &#34;3,95 kr&#34;
+                                },
+                                &#34;quantityCost&#34;: null,
+                                &#34;deposits&#34;: [],
+                                &#34;costModifiers&#34;: [],
+                                &#34;identifiers&#34;: []
+                            }
+                        ]
+                    }
+                }
+            },
+            &#34;sender&#34;: {
+                &#34;name&#34;: &#34;ICA&#34;,
+                &#34;key&#34;: &#34;15765665678a499fdd66139b23016615a978111111&#34;
+            },
+            &#34;attributes&#34;: {
+                &#34;isUpdatedWithReturns&#34;: false
+            }
+        }
+    }
+}
+</code></pre><p>What&rsquo;s important to note here is that by getting the <strong>key</strong> in the first response, we can use it to get receipt detail by inserting the <strong>key</strong> in our receipt detail request. This is useful for our Python script later as it enables us to fetch details about many receipts automatically.</p>
+<hr>
+<h2 id="step-4-automate-with-python">Step 4️: Automate with Python</h2>
+<p>Once I knew these API calls worked in Postman, it was time to write a Python script to fetch all receipts using the <code>requests</code> library.</p>
+<p><strong>What I did:</strong></p>
+<ol>
+<li><strong>Requested all unique keys</strong> that define each receipt.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">import</span> requests
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> dotenv <span style="color:#f92672">import</span> load_dotenv
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> os 
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> csv 
+</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> pandas <span style="color:#66d9ef">as</span> pd
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> tqdm <span style="color:#f92672">import</span> tqdm
+</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> datetime <span style="color:#f92672">import</span> datetime 
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>load_dotenv()
+</span></span><span style="display:flex;"><span>token <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>getenv(<span style="color:#e6db74">&#34;KIVRA_AUTH_TOKEN&#34;</span>)
+</span></span><span style="display:flex;"><span>x_actor_key <span style="color:#f92672">=</span> os<span style="color:#f92672">.</span>getenv(<span style="color:#e6db74">&#34;x-actor-key&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>url <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;https://bff.kivra.com/graphql&#34;</span>
+</span></span><span style="display:flex;"><span>list_receipt_body <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;operationName&#34;</span>: <span style="color:#e6db74">&#34;Receipts&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;query&#34;</span>: <span style="color:#e6db74">&#34;query Receipts($search: String, $limit: Int, $offset: Int) {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  receiptsV2(search: $search, limit: $limit, offset: $offset) {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    __typename</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    total</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    offset</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    limit</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    list {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      ...baseDetailsFields</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">}</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">fragment baseDetailsFields on ReceiptBaseDetails {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  key</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  purchaseDate</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  totalAmount {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  attributes {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    isCopy</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    isExpensed</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    isReturn</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    isTrashed</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  store {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    name</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    logo {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      publicUrl</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  tags {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    key</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    name</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    icon</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">}&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;variables&#34;</span>: {
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;limit&#34;</span>: <span style="color:#ae81ff">1000</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;offset&#34;</span>: <span style="color:#ae81ff">0</span>,
+</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;search&#34;</span>: <span style="color:#66d9ef">None</span>
+</span></span><span style="display:flex;"><span>    }
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>headers <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;x-actor-key&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>x_actor_key<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>,
+</span></span><span style="display:flex;"><span>    <span style="color:#e6db74">&#34;Authorization&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;Bearer </span><span style="color:#e6db74">{</span>token<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>}
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#e6db74">&#34;Started fetching receipts&#34;</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>response <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>post(url, json<span style="color:#f92672">=</span>list_receipt_body, headers<span style="color:#f92672">=</span>headers)
+</span></span><span style="display:flex;"><span>result <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>json()
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>receipt_keys <span style="color:#f92672">=</span> [dicti[<span style="color:#e6db74">&#34;key&#34;</span>] <span style="color:#66d9ef">for</span> dicti <span style="color:#f92672">in</span> result[<span style="color:#e6db74">&#34;data&#34;</span>][<span style="color:#e6db74">&#34;receiptsV2&#34;</span>][<span style="color:#e6db74">&#34;list&#34;</span>]]
+</span></span><span style="display:flex;"><span>print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;Fetched </span><span style="color:#e6db74">{</span>len(receipt_keys)<span style="color:#e6db74">}</span><span style="color:#e6db74"> of </span><span style="color:#e6db74">{</span>result[<span style="color:#e6db74">&#39;data&#39;</span>][<span style="color:#e6db74">&#39;receiptsV2&#39;</span>][<span style="color:#e6db74">&#39;total&#39;</span>]<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+</span></span></code></pre></div><ol start="2">
+<li>Fetched the details of all receipts.</li>
+<li>Saved the data in a structured format. In my case it was a CSV, with details such as the ones seen in csv_headers in the code below.</li>
+</ol>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>csv_headers <span style="color:#f92672">=</span> [<span style="color:#e6db74">&#34;Primary Key&#34;</span>, <span style="color:#e6db74">&#34;Receipt Key&#34;</span>, <span style="color:#e6db74">&#34;Purchase Date&#34;</span>, <span style="color:#e6db74">&#34;Store Name&#34;</span>, <span style="color:#e6db74">&#34;Item&#34;</span>, <span style="color:#e6db74">&#34;Product Amount&#34;</span>, <span style="color:#e6db74">&#34;Category&#34;</span>, <span style="color:#e6db74">&#34;Product Amount Numeric&#34;</span>]
+</span></span><span style="display:flex;"><span>csv_file_path <span style="color:#f92672">=</span> <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;receipts_</span><span style="color:#e6db74">{</span>datetime<span style="color:#f92672">.</span>now()<span style="color:#f92672">.</span>strftime(<span style="color:#e6db74">&#39;%Y_%m_</span><span style="color:#e6db74">%d</span><span style="color:#e6db74">&#39;</span>)<span style="color:#e6db74">}</span><span style="color:#e6db74">.csv&#34;</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>primary_key_count <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">with</span> open(csv_file_path, mode<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;w&#34;</span>, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8-sig&#34;</span>, newline<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;&#34;</span>) <span style="color:#66d9ef">as</span> f: 
+</span></span><span style="display:flex;"><span>    writer <span style="color:#f92672">=</span> csv<span style="color:#f92672">.</span>DictWriter(f, fieldnames<span style="color:#f92672">=</span>csv_headers)
+</span></span><span style="display:flex;"><span>    writer<span style="color:#f92672">.</span>writeheader()
+</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> key <span style="color:#f92672">in</span> tqdm(receipt_keys, desc<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;Processing receipts&#34;</span>): 
+</span></span><span style="display:flex;"><span>        receipt_details_body <span style="color:#f92672">=</span> {
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;operationName&#34;</span>: <span style="color:#e6db74">&#34;ReceiptDetails&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;query&#34;</span>: <span style="color:#e6db74">&#34;query ReceiptDetails($key: String!) {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  receiptV2(key: $key) {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    key</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    content {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      header {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        totalPurchaseAmount</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        subAmounts</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        isoDate</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        formattedDate</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        labels {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          type</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        logo {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          publicUrl</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      footer {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      items {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        allItems {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          items {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            type</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            ... on ProductListItem {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              ...productFields</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            ... on GeneralDepositListItem {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              money {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              isRefund</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              description</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            ... on GeneralDiscountListItem {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              money {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              isRefund</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        noBonusItems {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          items {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            type</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            ... on ProductListItem {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              ...productFields</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        returnedItems {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          items {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            type</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            ... on ProductReturnListItem {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              name</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              money {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              quantityCost {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              deposits {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                description</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                money {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                  formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                isRefund</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              costModifiers {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                description</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                money {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                  formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                isRefund</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              connectedReceipt {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                receiptKey</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                description</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                isParentReceipt</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              identifiers</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      storeInformation {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        storeInformation {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          subRows {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      paymentInformation {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        totals {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          totals {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            subRows {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        paymentMethods {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          methods {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            type</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            information {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              subRows {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">                value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        customer {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          customer {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            subRows {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        cashRegister {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          cashRegister {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            subRows {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              property</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">              value</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">            }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">          }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    campaigns {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      image {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">        publicUrl</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      title</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      key</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      height</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      width</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      destinationUrl</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    sender {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      name</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      key</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    attributes {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      isUpdatedWithReturns</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">}</span><span style="color:#ae81ff">\n\n</span><span style="color:#e6db74">fragment productFields on ProductListItem {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  name</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  money {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  quantityCost {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  deposits {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    description</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    money {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    isRefund</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  costModifiers {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    description</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    money {</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">      formatted</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">    isRefund</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  }</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  identifiers</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">  text</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">}&#34;</span>,
+</span></span><span style="display:flex;"><span>            <span style="color:#e6db74">&#34;variables&#34;</span>: {
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;key&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>key<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>            }
+</span></span><span style="display:flex;"><span>        }
+</span></span><span style="display:flex;"><span>        response <span style="color:#f92672">=</span> requests<span style="color:#f92672">.</span>post(url, json<span style="color:#f92672">=</span>receipt_details_body, headers<span style="color:#f92672">=</span>headers)
+</span></span><span style="display:flex;"><span>        result <span style="color:#f92672">=</span> response<span style="color:#f92672">.</span>json()
+</span></span><span style="display:flex;"><span>        receipt <span style="color:#f92672">=</span> result[<span style="color:#e6db74">&#34;data&#34;</span>][<span style="color:#e6db74">&#34;receiptV2&#34;</span>][<span style="color:#e6db74">&#34;content&#34;</span>]
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>        items <span style="color:#f92672">=</span> receipt[<span style="color:#e6db74">&#34;items&#34;</span>][<span style="color:#e6db74">&#34;allItems&#34;</span>][<span style="color:#e6db74">&#34;items&#34;</span>]
+</span></span><span style="display:flex;"><span>        store_name <span style="color:#f92672">=</span> receipt[<span style="color:#e6db74">&#34;storeInformation&#34;</span>][<span style="color:#e6db74">&#34;storeInformation&#34;</span>][<span style="color:#ae81ff">0</span>][<span style="color:#e6db74">&#34;property&#34;</span>]
+</span></span><span style="display:flex;"><span>        purchase_date <span style="color:#f92672">=</span> receipt[<span style="color:#e6db74">&#34;header&#34;</span>][<span style="color:#e6db74">&#34;formattedDate&#34;</span>]
+</span></span><span style="display:flex;"><span>        
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> item <span style="color:#f92672">in</span> items:
+</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#34;name&#34;</span> <span style="color:#f92672">not</span> <span style="color:#f92672">in</span> item:
+</span></span><span style="display:flex;"><span>                <span style="color:#66d9ef">continue</span>
+</span></span><span style="display:flex;"><span>            name <span style="color:#f92672">=</span> item[<span style="color:#e6db74">&#34;name&#34;</span>]
+</span></span><span style="display:flex;"><span>            product_amount <span style="color:#f92672">=</span> item[<span style="color:#e6db74">&#34;money&#34;</span>][<span style="color:#e6db74">&#34;formatted&#34;</span>]
+</span></span><span style="display:flex;"><span>            product_amount_numeric <span style="color:#f92672">=</span> float(item[<span style="color:#e6db74">&#34;money&#34;</span>][<span style="color:#e6db74">&#34;formatted&#34;</span>]<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#34;,&#34;</span>, <span style="color:#e6db74">&#34;.&#34;</span>)<span style="color:#f92672">.</span>replace(<span style="color:#e6db74">&#34;kr&#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>))
+</span></span><span style="display:flex;"><span>            writer<span style="color:#f92672">.</span>writerow({
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;Primary Key&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>primary_key_count<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>,
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;Receipt Key&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>key<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>, 
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;Purchase Date&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>purchase_date<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>,    
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;Store Name&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>store_name<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>, 
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;Item&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>name<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>, 
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;Product Amount&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>product_amount<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>, 
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;Category&#34;</span>: <span style="color:#e6db74">&#34;None&#34;</span>, 
+</span></span><span style="display:flex;"><span>                <span style="color:#e6db74">&#34;Product Amount Numeric&#34;</span>: <span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;</span><span style="color:#e6db74">{</span>product_amount_numeric<span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>
+</span></span><span style="display:flex;"><span>            })
+</span></span><span style="display:flex;"><span>            primary_key_count <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>df <span style="color:#f92672">=</span> pd<span style="color:#f92672">.</span>read_csv(csv_file_path, encoding<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;utf-8-sig&#34;</span>)
+</span></span></code></pre></div><p>Now, I have a wonderful little CSV file that I can analyze to find purchase patterns! 🤩</p>
+<hr>
 
         </div>
         <div class="post_extra mb-2">
