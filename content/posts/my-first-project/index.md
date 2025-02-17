@@ -240,7 +240,7 @@ print(f"Fetched {len(receipt_keys)} of {result['data']['receiptsV2']['total']}")
 2. Fetched the details of all receipts.   
 3. Saved the data in a structured format. In my case it was a CSV, with details such as the ones seen in csv_headers in the code below.
 
-```python
+```py3
 csv_headers = ["Primary Key", "Receipt Key", "Purchase Date", "Store Name", "Item", "Product Amount", "Category", "Product Amount Numeric"]
 csv_file_path = f"receipts_{datetime.now().strftime('%Y_%m_%d')}.csv"
 

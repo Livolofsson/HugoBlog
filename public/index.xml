@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>My Project Showcase</title>
-    <link>http://localhost:1313/</link>
+    <link>http://localhost:61734/</link>
     <description>Recent content on My Project Showcase</description>
     <generator>Hugo</generator>
     <language>en</language>
     <lastBuildDate>Fri, 07 Feb 2025 00:00:00 +0000</lastBuildDate>
-    <atom:link href="http://localhost:1313/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://localhost:61734/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Reverse Engineering Kivra&#39;s API</title>
-      <link>http://localhost:1313/posts/my-first-project/</link>
+      <link>http://localhost:61734/posts/my-first-project/</link>
       <pubDate>Fri, 07 Feb 2025 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/posts/my-first-project/</guid>
+      <guid>http://localhost:61734/posts/my-first-project/</guid>
       <description>&lt;p&gt;&lt;img src=&#34;kivratest2.png&#34; alt=&#34;Alt text&#34; title=&#34;a title&#34;&gt;&lt;/p&gt;&#xA;&lt;p&gt;Kivra is a digital service that many companies use to send documents to Swedish citizens, such as bills, tax notices and an occasional reminder such as “Hey, it’s time for a doctor visit!”  letting you know you’re not invincible anymore.&lt;/p&gt;&#xA;&lt;p&gt;It also collects all receipts of purchases you’ve made, if you want them to! The coolest part? You automatically stop receiving paper documents in your mailbox  or receipts in-store, because you’ve signed up to get them digitally instead! It’s the perfect gift for adulthood. 😉&lt;/p&gt;</description>
     </item>
   </channel>
